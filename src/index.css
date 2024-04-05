@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.leaflet-control-layers-toggle {
+    background-image: url(https://i.stack.imgur.com/3keSg.png) !important;
+      background-color: #2da0e2;
+  }
+  
+  .leaflet-touch .leaflet-control-layers-toggle {
+  background-image: url(https://i.stack.imgur.com/3keSg.png) !important;
+  background-color: #2da0e2;
+  }
+  
+  .leaflet-control-layers-expanded {
+    color: white;
+      background-color: #2da0e2;
+  }
