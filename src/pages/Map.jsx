@@ -9,7 +9,8 @@ import {
 } from "react-leaflet";
 import L, { icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import BotNav from '../components/BotNav';
+import BotNav from '../components/Map/BotNav';
+import TopNav from '../components/Map/TopNav';
 
 const CustomMarker = ({position, zoom, setZoom}) => {
   const map = useMapEvents({
@@ -32,6 +33,7 @@ const Map = () => {
       
   return(
     <>
+      <TopNav />
       <MapContainer center={position} zoom={zoom}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
