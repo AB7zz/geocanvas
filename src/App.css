@@ -3,3 +3,15 @@
     height: 100vh;
     z-index: 1;
 }
+
+.custom-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+  
+.custom-div {
+    background-color: white;
+    border: 1px solid white;
+    border-radius: 10px;
+}
