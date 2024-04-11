@@ -4,7 +4,6 @@ import Home from './pages/Home'
 import Map from './pages/Map'
 import Create from './pages/Create'
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 
 function App() {
 
@@ -14,7 +13,6 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           <Route path="/create/:mapid" element={<Create />} />
           <Route path="/:mapid" element={<Map />} />
         </Routes>

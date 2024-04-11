@@ -2,7 +2,7 @@ import React from 'react';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, getRedirectResult, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, collection, doc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc } from "firebase/firestore";
 
 const provider = new GoogleAuthProvider();
 
@@ -67,12 +67,19 @@ export const StateContextProvider = ({ children }) => {
       const initCreateDoc = async(email, displayName) => {
         const usersRef = collection(db, "users");
         
-        await setDoc(doc(usersRef, email), {
-          displayName,
-          email
-        })
-        setLoginState(2)
-        window.location.replace('/map')
+        const docRef = doc(usersRef, email);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          console.log("Document with email already exists")
+        } else {
+          await setDoc(docRef, {
+              displayName,
+              email
+          });
+          setLoginState(2);
+        }
+        window.location.replace('/map');
     }
 
     return (
