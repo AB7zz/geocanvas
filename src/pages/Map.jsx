@@ -97,6 +97,11 @@ const CustomMarker = ({ position, zoom, setZoom, images }) => {
 };
 
 const Map = () => {
+  React.useEffect(() => {
+    if(localStorage.getItem('login') != 'true'){
+      window.location.replace('/login')
+    }
+  }, [])
   const { mapid } = useParams()
   const { imageData, setImageData } = useStateContext()
   const [zoom, setZoom] = React.useState(13)
