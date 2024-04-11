@@ -11,23 +11,94 @@ import L, { icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import BotNav from '../components/Map/BotNav';
 import TopNav from '../components/Map/TopNav';
+import { useStateContext } from '../context/StateContext';
 
-const CustomMarker = ({position, zoom, setZoom}) => {
+const CustomMarker = ({ position, zoom, setZoom, images }) => {
   const map = useMapEvents({
     zoomend() {
       setZoom(map.getZoom())
     }
   })
-  const customIcon = L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="height: ${10*zoom}px; width: ${10*zoom}px; background-color: white; border-radius: 10px;"></div>`
-  });
+  let customIcon
+  if(images.length == 1){
+    customIcon = L.divIcon({
+      className: 'custom-marker',
+      html: `
+      <div 
+        style="
+          height: ${10 * zoom}px; 
+          width: ${10 * zoom}px; 
+          border-radius: 10px;
+          overflow: hidden;
+        "
+      >
+        <img 
+          src="${images[0]}" 
+          alt="Image" 
+          style="
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+          "
+        />
+      </div>`
+    });
+  }else{
+    customIcon = L.divIcon({
+      className: 'custom-marker',
+      html: `
+      <div 
+        style="
+          position: absolute;
+          top: 0px;
+          z-index: 10;
+          height: ${10 * zoom}px; 
+          width: ${10 * zoom}px; 
+          border-radius: 10px;
+          overflow: hidden;
+        "
+      >
+        <img 
+          src="${images[0]}" 
+          alt="Image" 
+          style="
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+          "
+        />
+      </div>
+      <div 
+        style="
+          position: absolute;
+          top: -15px;
+          left: 15px;
+          height: ${10 * zoom}px; 
+          width: ${10 * zoom}px; 
+          border-radius: 10px;
+          overflow: hidden;
+        "
+      >
+        <img 
+          src="${images[1]}" 
+          alt="Image" 
+          style="
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+          "
+        />
+      </div>
+      `
+    });
+  }
 
   return <Marker position={position} icon={customIcon} />;
 };
 
 const Map = () => {
   const { mapid } = useParams()
+  const { imageData, setImageData } = useStateContext()
   const [zoom, setZoom] = React.useState(13)
   const position = [51.505, -0.09]
       
@@ -39,7 +110,11 @@ const Map = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <CustomMarker position={position} zoom={zoom} setZoom={setZoom} />
+        {
+          imageData && imageData.map((data, i) => 
+            <CustomMarker key={i} position={data.position} zoom={zoom} setZoom={setZoom} images={data.images} />
+          )
+        }
       </MapContainer>
       <BotNav />
     </>
