@@ -1,9 +1,8 @@
 import React from 'react';
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getAuth, getRedirectResult, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, doc, setDoc, getDoc } from "firebase/firestore";
-import { useNavigate } from 'react-router-dom'
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
 const provider = new GoogleAuthProvider();
 
@@ -22,12 +21,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore(app);
+const storage = getStorage()
 
 export const StateContextProvider = ({ children }) => {
 
     const [mapid, setMapid] = React.useState('')
     const [userDetails, setUserDetails] = React.useState({})
-
+    const [searchLoc, setSearchLoc] = React.useState('')
+    
     // 0 - not logged in
     // 1 - logging in
     // 2 - logged in
@@ -101,12 +102,51 @@ export const StateContextProvider = ({ children }) => {
         window.location.replace('/map')
     }
 
+    const handleUploadImage = (location, image) => {
+      const storageRef = ref(storage, `${userDetails.email}/some-child`)
+      uploadBytes(storageRef, image).then(async(snapshot) => {
+        const imageUrl = await getDownloadURL(snapshot.ref)
+        
+        const usersRef = collection(db, "images");
+        const docRef = doc(usersRef, userDetails.email);
+        const docSnap = await getDoc(docRef)
+
+        if (docSnap.exists()) {
+          const existingData = docSnap.data().data
+          const newData = {
+            location,
+            lat: 0,
+            lng: 0,
+            images: [imageUrl]
+          }
+          existingData.push(newData)
+          await setDoc(docRef, {data: existingData});
+        } else {
+          await setDoc(docRef, {
+            data: [
+              {
+                location,
+                lat: 0,
+                lng: 0,
+                images: [imageUrl]
+              }
+            ]
+          }
+          )
+        }
+        console.log('Uploaded everything');
+      });
+    }
+
     return (
         <StateContext.Provider value={{
             setMapid,
             setImageData,
             handleLogin,
             fetchUserDetails,
+            setSearchLoc,
+            handleUploadImage,
+            searchLoc,
             loginState,
             mapid,
             imageData,
