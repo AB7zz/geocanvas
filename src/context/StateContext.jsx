@@ -1,8 +1,9 @@
 import React from 'react';
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, getRedirectResult, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, getRedirectResult, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { useNavigate } from 'react-router-dom'
 
 const provider = new GoogleAuthProvider();
 
@@ -23,7 +24,9 @@ const auth = getAuth();
 const db = getFirestore(app);
 
 export const StateContextProvider = ({ children }) => {
+
     const [mapid, setMapid] = React.useState('')
+    const [userDetails, setUserDetails] = React.useState({})
 
     // 0 - not logged in
     // 1 - logging in
@@ -45,6 +48,22 @@ export const StateContextProvider = ({ children }) => {
           ]
         }
     ])
+
+    const fetchUserDetails = async() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (user) {
+            setUserDetails(user);
+          } else {
+            localStorage.removeItem('token');
+            setUserDetails(null);
+          }
+        });
+
+        return unsubscribe;
+      }
+    }
 
     const handleLogin = () => {
       setLoginState(1)
@@ -79,7 +98,7 @@ export const StateContextProvider = ({ children }) => {
           });
           setLoginState(2);
         }
-        window.location.replace('/map');
+        window.location.replace('/map')
     }
 
     return (
@@ -87,9 +106,11 @@ export const StateContextProvider = ({ children }) => {
             setMapid,
             setImageData,
             handleLogin,
+            fetchUserDetails,
             loginState,
             mapid,
-            imageData
+            imageData,
+            userDetails
         }}>
             {children}
         </StateContext.Provider>

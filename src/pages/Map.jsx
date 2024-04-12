@@ -12,6 +12,7 @@ import 'leaflet/dist/leaflet.css';
 import BotNav from '../components/Map/BotNav';
 import TopNav from '../components/Map/TopNav';
 import { useStateContext } from '../context/StateContext';
+import { useNavigate } from 'react-router-dom'
 
 const CustomMarker = ({ position, zoom, setZoom, images }) => {
   const map = useMapEvents({
@@ -97,9 +98,15 @@ const CustomMarker = ({ position, zoom, setZoom, images }) => {
 };
 
 const Map = () => {
+  const { fetchUserDetails } = useStateContext()
+  const navigate = useNavigate()
   React.useEffect(() => {
     if(localStorage.getItem('login') != 'true'){
       window.location.replace('/login')
+    }
+    const res = fetchUserDetails()
+    if(!res){
+      navigate('/login', { replace: true })
     }
   }, [])
   const { mapid } = useParams()
