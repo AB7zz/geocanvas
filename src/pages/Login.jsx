@@ -3,8 +3,9 @@ import { useStateContext } from '../context/StateContext'
 import GoogleButton from 'react-google-button'
 
 const Login = () => {
+  const { userDetails } = useStateContext()
   React.useEffect(() => {
-    if(localStorage.getItem('login') == 'true'){
+    if(localStorage.getItem('login') == 'true' && localStorage.getItem('username')){
       window.location.replace('/map')
     }
   }, [])

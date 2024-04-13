@@ -50,19 +50,37 @@ export const StateContextProvider = ({ children }) => {
         }
     ])
 
-    const fetchUserDetails = async() => {
+    const fetchPersonalDetails = async() => {
       const token = localStorage.getItem('token');
+      let userData = {}
       if (token) {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          if (user) {
-            setUserDetails(user);
-          } else {
-            localStorage.removeItem('token');
-            setUserDetails(null);
-          }
+        const user = await new Promise((resolve) => {
+          onAuthStateChanged(auth, (user) => {
+              resolve(user);
+          });
         });
-
-        return unsubscribe;
+        if (user) {
+            userData = user;
+        }else{
+            localStorage.removeItem('token');
+            userData = null
+            setUserDetails(null);
+        }
+      }
+      if(userData){
+        const usersRef = collection(db, "users");
+        const docRef = doc(usersRef, userData.email);
+        const docSnap = await getDoc(docRef);
+  
+        if (docSnap.exists()) {
+            userData = { ...userData, ...docSnap.data() }
+            setUserDetails(userData)
+        } else {
+            console.log("Document with email does not exist")
+        }
+        return true;
+      }else{
+        return false
       }
     }
 
@@ -84,22 +102,36 @@ export const StateContextProvider = ({ children }) => {
         });
       }
       
-      const initCreateDoc = async(email, displayName) => {
-        const usersRef = collection(db, "users");
-        
-        const docRef = doc(usersRef, email);
-        const docSnap = await getDoc(docRef);
+    const initCreateDoc = async(email, displayName) => {
+      const usersRef = collection(db, "users");
+      
+      const docRef = doc(usersRef, email);
+      const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          console.log("Document with email already exists")
-        } else {
-          await setDoc(docRef, {
-              displayName,
-              email
-          });
-          setLoginState(2);
-        }
+      if (docSnap.exists()) {
+        console.log("Document with email already exists")
         window.location.replace('/map')
+      } else {
+        await setDoc(docRef, {
+            displayName,
+            email,
+            public: true
+        });
+        setLoginState(2);
+        window.location.replace('/username')
+      }
+    }
+
+    const handleCreateUsername = (username) => {
+      console.log(username, userDetails.email)
+      const usersRef = collection(db, "users");
+      const docRef = doc(usersRef, userDetails.email);
+      updateDoc(docRef, {
+        username
+      }).then(() => {
+        localStorage.setItem('username', username)
+        window.location.replace('/map')
+      })
     }
 
     const handleUploadImage = (location, image) => {
@@ -143,9 +175,10 @@ export const StateContextProvider = ({ children }) => {
             setMapid,
             setImageData,
             handleLogin,
-            fetchUserDetails,
+            fetchPersonalDetails,
             setSearchLoc,
             handleUploadImage,
+            handleCreateUsername,
             searchLoc,
             loginState,
             mapid,

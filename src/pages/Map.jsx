@@ -98,18 +98,32 @@ const CustomMarker = ({ position, zoom, setZoom, images }) => {
 };
 
 const Map = () => {
-  const { fetchUserDetails } = useStateContext()
+  const { fetchPersonalDetails, userDetails } = useStateContext()
   const navigate = useNavigate()
   React.useEffect(() => {
     if(localStorage.getItem('login') != 'true'){
       window.location.replace('/login')
     }
-    const res = fetchUserDetails()
+    const res = fetchPersonalDetails()
+    
     if(!res){
+      localStorage.removeItem('username')
+      localStorage.removeItem('login')
+      localStorage.removeItem('token')
+      localStorage.removeItem('username')
       navigate('/login', { replace: true })
     }
   }, [])
-  const { mapid } = useParams()
+
+  React.useEffect(() => {
+    if(userDetails.length > 0 && !userDetails.username){
+      navigate('/username', {replace: true})
+    }else if(userDetails.username && !localStorage.getItem('username')){
+      localStorage.setItem('username', userDetails.username)
+    }
+  }, [userDetails])
+
+  const { username } = useParams()
   const { imageData, setImageData } = useStateContext()
   const [zoom, setZoom] = React.useState(13)
   const position = [51.505, -0.09]
