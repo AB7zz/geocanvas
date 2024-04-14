@@ -14,7 +14,7 @@ import TopNav from '../components/Map/TopNav';
 import { useStateContext } from '../context/StateContext';
 import { useNavigate } from 'react-router-dom'
 
-const CustomMarker = ({ position, zoom, setZoom, images }) => {
+const CustomMarker = ({ lat, lng, zoom, setZoom, images }) => {
   const map = useMapEvents({
     zoomend() {
       setZoom(map.getZoom())
@@ -94,37 +94,45 @@ const CustomMarker = ({ position, zoom, setZoom, images }) => {
     });
   }
 
-  return <Marker position={position} icon={customIcon} />;
+  return <Marker position={[lat, lng]} icon={customIcon} />;
 };
 
 const Map = () => {
-  const { fetchPersonalDetails, userDetails } = useStateContext()
+  const { fetchPersonalDetails, profileDetails, fetchUserDetails, profileImages } = useStateContext()
   const navigate = useNavigate()
+  const { username } = useParams()
+
   React.useEffect(() => {
     if(localStorage.getItem('login') != 'true'){
       window.location.replace('/login')
     }
-    const res = fetchPersonalDetails()
-    
-    if(!res){
-      localStorage.removeItem('username')
-      localStorage.removeItem('login')
-      localStorage.removeItem('token')
-      localStorage.removeItem('username')
-      navigate('/login', { replace: true })
+    const fetchData = async() => {
+      return await fetchPersonalDetails()
+    }
+
+    if(username == 'map'){
+      const res = fetchData()
+      
+      if(!res){
+        localStorage.removeItem('username')
+        localStorage.removeItem('login')
+        localStorage.removeItem('token')
+        localStorage.removeItem('username')
+        navigate('/login', { replace: true })
+      }
+    }else{
+        fetchUserDetails(username)
     }
   }, [])
 
   React.useEffect(() => {
-    if(userDetails.length > 0 && !userDetails.username){
+    if(profileDetails && profileDetails.length > 0 && !profileDetails.username){
       navigate('/username', {replace: true})
-    }else if(userDetails.username && !localStorage.getItem('username')){
-      localStorage.setItem('username', userDetails.username)
+    }else if(profileDetails && profileDetails.username && !localStorage.getItem('username')){
+      localStorage.setItem('username', profileDetails.username)
     }
-  }, [userDetails])
+  }, [profileDetails])
 
-  const { username } = useParams()
-  const { imageData, setImageData } = useStateContext()
   const [zoom, setZoom] = React.useState(13)
   const position = [51.505, -0.09]
       
@@ -137,8 +145,8 @@ const Map = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {
-          imageData && imageData.map((data, i) => 
-            <CustomMarker key={i} position={data.position} zoom={zoom} setZoom={setZoom} images={data.images} />
+          profileDetails && profileDetails.username && profileImages && profileImages.map((data, i) => 
+            <CustomMarker key={i} lat={data.lat} lng={data.lng} zoom={zoom} setZoom={setZoom} images={data.images} />
           )
         }
       </MapContainer>

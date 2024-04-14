@@ -1,6 +1,6 @@
 import React from 'react';
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signInWithCustomToken, signOut } from "firebase/auth";
 import { getFirestore, collection, doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 
@@ -26,29 +26,14 @@ const storage = getStorage()
 export const StateContextProvider = ({ children }) => {
 
     const [mapid, setMapid] = React.useState('')
-    const [userDetails, setUserDetails] = React.useState({})
+    const [profileDetails, setProfileDetails] = React.useState({})
+    const [profileImages, setProfileImages] = React.useState([])
     const [searchLoc, setSearchLoc] = React.useState('')
     
     // 0 - not logged in
     // 1 - logging in
     // 2 - logged in
     const [loginState, setLoginState] = React.useState(0)
-    const [imageData, setImageData] = React.useState([
-        {
-          position: [51.505, -0.09],
-          images: [
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT301-O44d0zGakxaUb_Z5leHAtWRQddBpgkWPuqE2Oyw&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQka_16bh1cyRU3QvjdKELYHLDB9aRw_AI5XYRURbebmNKtIeyLDpcQ5yw_wpBCaI_PVeU&usqp=CAU"
-          ]
-        },
-        {
-          position: [52.505, -0.09],
-          images: [
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT301-O44d0zGakxaUb_Z5leHAtWRQddBpgkWPuqE2Oyw&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQka_16bh1cyRU3QvjdKELYHLDB9aRw_AI5XYRURbebmNKtIeyLDpcQ5yw_wpBCaI_PVeU&usqp=CAU"
-          ]
-        }
-    ])
 
     const fetchPersonalDetails = async() => {
       const token = localStorage.getItem('token');
@@ -64,21 +49,25 @@ export const StateContextProvider = ({ children }) => {
         }else{
             localStorage.removeItem('token');
             userData = null
-            setUserDetails(null);
+            setProfileDetails(null);
         }
-      }
-      if(userData){
-        const usersRef = collection(db, "users");
-        const docRef = doc(usersRef, userData.email);
-        const docSnap = await getDoc(docRef);
-  
-        if (docSnap.exists()) {
-            userData = { ...userData, ...docSnap.data() }
-            setUserDetails(userData)
-        } else {
-            console.log("Document with email does not exist")
+        if(userData){
+          const usersRef = collection(db, "users");
+          const docRef = doc(usersRef, userData.email);
+          const docSnap = await getDoc(docRef);
+    
+          if (docSnap.exists()) {
+              userData = { ...userData, ...docSnap.data() }
+              fetchUserImages(userData.email)
+              setProfileDetails(userData)
+              return true;
+          } else {
+              console.log("Document with email does not exist")
+              return false
+          }
+        }else{
+          return false
         }
-        return true;
       }else{
         return false
       }
@@ -100,7 +89,22 @@ export const StateContextProvider = ({ children }) => {
           const email = error.customData.email;
           const credential = GoogleAuthProvider.credentialFromError(error);
         });
-      }
+    }
+
+    const Logout = () => {
+      signOut(auth)
+        .then(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('login');
+          localStorage.removeItem('username');
+          setProfileDetails(null);
+          return true
+        })
+        .catch((error) => {
+          console.error("Error logging out:", error);
+          return false
+        });
+    }
       
     const initCreateDoc = async(email, displayName) => {
       const usersRef = collection(db, "users");
@@ -123,67 +127,112 @@ export const StateContextProvider = ({ children }) => {
     }
 
     const handleCreateUsername = (username) => {
-      console.log(username, userDetails.email)
+      console.log(username, profileDetails.email)
       const usersRef = collection(db, "users");
-      const docRef = doc(usersRef, userDetails.email);
+      const docRef = doc(usersRef, profileDetails.email);
       updateDoc(docRef, {
         username
+      })
+      
+      const usernameEmailRef = collection(db, "user-email")
+      const docRef2 = doc(usernameEmailRef, username);
+      setDoc(docRef2, {
+        email: profileDetails.email
       }).then(() => {
         localStorage.setItem('username', username)
         window.location.replace('/map')
       })
     }
 
-    const handleUploadImage = (location, image) => {
-      const storageRef = ref(storage, `${userDetails.email}/some-child`)
-      uploadBytes(storageRef, image).then(async(snapshot) => {
-        const imageUrl = await getDownloadURL(snapshot.ref)
-        
-        const usersRef = collection(db, "images");
-        const docRef = doc(usersRef, userDetails.email);
-        const docSnap = await getDoc(docRef)
-
+    const fetchUserDetails = async(username) => {
+      const usernameEmailRef = collection(db, "user-email")
+      const docRef = doc(usernameEmailRef, username)
+      const docSnap = await getDoc(docRef);
+  
         if (docSnap.exists()) {
-          const existingData = docSnap.data().data
-          const newData = {
-            location,
-            lat: 0,
-            lng: 0,
-            images: [imageUrl]
+          const email = docSnap.data().email
+          const usersRef = collection(db, "users");
+          const docRef2 = doc(usersRef, email);
+          const docSnap2 = await getDoc(docRef2)
+          if (docSnap2.exists()) {
+            setProfileDetails(docSnap2.data())
+            fetchUserImages(email)
+          } else {
+            console.log("Document with email does not exist")
           }
-          existingData.push(newData)
-          await setDoc(docRef, {data: existingData});
-        } else {
-          await setDoc(docRef, {
-            data: [
-              {
-                location,
-                lat: 0,
-                lng: 0,
-                images: [imageUrl]
-              }
-            ]
-          }
-          )
+        }else{
+          console.log('no user found')
         }
-        console.log('Uploaded everything');
-      });
+    }
+
+    const fetchUserImages = async(email) => {
+      const usersRef = collection(db, "images");
+      const docRef = doc(usersRef, email);
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        console.log(docSnap.data().data)
+        setProfileImages(docSnap.data().data)
+      } else {
+        console.log("Document with email does not exist")
+        setProfileImages(null)
+      }
+    }
+
+    const uploadImage = async(location, images) => {
+      let imageUrls = []
+      const imageUploadPromises = images.map(async (image) => {
+        const storageRef = ref(storage, `${profileDetails.email}/${image.name}`);
+        const snapshot = await uploadBytes(storageRef, image);
+        const imageUrl = await getDownloadURL(snapshot.ref);
+        imageUrls.push(imageUrl);
+      })
+
+      await Promise.all(imageUploadPromises)
+
+      const usersRef = collection(db, "images");
+      const docRef = doc(usersRef, profileDetails.email);
+      const docSnap = await getDoc(docRef)
+
+      if (docSnap.exists()) {
+        const existingData = docSnap.data().data
+        const newData = {
+          location,
+          lat: 0,
+          lng: 0,
+          images: imageUrls
+        }
+        existingData.push(newData)
+        await setDoc(docRef, {data: existingData});
+      } else {
+        await setDoc(docRef, {
+          data: [
+            {
+              location,
+              lat: 0,
+              lng: 0,
+              images: imageUrls
+            }
+          ]
+        })
+      }
+      return true
     }
 
     return (
         <StateContext.Provider value={{
             setMapid,
-            setImageData,
             handleLogin,
             fetchPersonalDetails,
             setSearchLoc,
-            handleUploadImage,
+            uploadImage,
             handleCreateUsername,
+            fetchUserDetails,
+            Logout,
+            profileImages,
             searchLoc,
             loginState,
             mapid,
-            imageData,
-            userDetails
+            profileDetails
         }}>
             {children}
         </StateContext.Provider>
