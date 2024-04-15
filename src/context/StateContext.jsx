@@ -60,15 +60,19 @@ export const StateContextProvider = ({ children }) => {
               userData = { ...userData, ...docSnap.data() }
               fetchUserImages(userData.email)
               setProfileDetails(userData)
+              setLoginState(2)
               return true;
           } else {
               console.log("Document with email does not exist")
+              setLoginState(0)
               return false
+            }
+          }else{
+            setLoginState(0)
+            return false
           }
         }else{
-          return false
-        }
-      }else{
+        setLoginState(0)
         return false
       }
     }

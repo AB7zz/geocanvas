@@ -3,7 +3,7 @@ import { useStateContext } from '../context/StateContext'
 import { Link } from 'react-router-dom'
 
 const Home = () => {
-  const { setMapid, mapid } = useStateContext()
+  const { setMapid, mapid, loginState } = useStateContext()
   const handleCreate = () => {
     if(localStorage.getItem('login') != 'true'){
       window.location.replace('/login')
@@ -12,11 +12,14 @@ const Home = () => {
     }
   }
   return (
-    <div className='p-5'>
-      <input className='border-2 border-black' onChange={(e) => setMapid(e.target.value)} type="text" name="mapid" placeholder='Enter map name' id="" />
-      <button onClick={handleCreate} className='bg-green-500 rounded px-3 py-1 text-white text-center'>Create</button>
-      <Link to={`/map`} className='bg-green-500 rounded px-3 py-1 text-white text-center'>Map</Link>
-    </div>
+    <>
+      <div className='p-5'>
+        <input className='border-2 border-black' onChange={(e) => setMapid(e.target.value)} type="text" name="mapid" placeholder='Enter map name' id="" />
+        <button onClick={handleCreate} className='bg-green-500 rounded px-3 py-1 text-white text-center'>Create</button>
+        <Link to='/map' className='bg-green-500 rounded px-3 py-1 text-white text-center'>Map</Link>
+      </div>
+      {loginState == 0 && <Link to='/login' className='bg-blue-500 rounded px-3 py-1 text-white text-center'>Login</Link>}
+    </>
   )
 }
 
